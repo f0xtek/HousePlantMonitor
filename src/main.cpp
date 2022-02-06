@@ -29,6 +29,14 @@ struct environmentReadings
   float humid;
 };
 
+environmentReadings getEnvironmentReadings()
+{
+  environmentReadings reading;
+  reading.temp = dht.readTemperature();
+  reading.humid = dht.readHumidity();
+  return reading;
+}
+
 void printReadings(environmentReadings r)
 {
   Serial.print("Temp: ");
@@ -39,12 +47,32 @@ void printReadings(environmentReadings r)
   Serial.println(" %");
 }
 
-environmentReadings getEnvironmentReadings()
+void displayEnvironmentReadingsOnScreen(environmentReadings reading)
 {
-  environmentReadings reading;
-  reading.temp = dht.readTemperature();
-  reading.humid = dht.readHumidity();
-  return reading;
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 5);
+  display.cp437(true); // Use full 256 char 'Code Page 437' font
+  display.println("Temperature:");
+  display.println();
+  display.println(String(reading.temp) + " C");
+  display.println();
+  display.println("Humidity: ");
+  display.println();
+  display.println(String(reading.humid) + " %");
+  display.display();
+}
+
+int readMoistureValue()
+{
+  return analogRead(A0);
+}
+
+void printMoisture(int moistureValue)
+{
+  Serial.print("Moisture: ");
+  Serial.println(moistureValue);
 }
 
 void setup()
@@ -68,35 +96,25 @@ void setup()
   delay(2000);
 }
 
-void displayEnvironmentReadings(environmentReadings reading)
-{
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 5);
-  display.cp437(true); // Use full 256 char 'Code Page 437' font
-  display.println("Temperature:");
-  display.println();
-  display.println(String(reading.temp) + " C");
-  display.println();
-  display.println("Humidity: ");
-  display.println();
-  display.println(String(reading.humid) + " %");
-  display.display();
-}
-
 void loop()
 {
   currentMillis = millis();
   environmentReadings r = getEnvironmentReadings();
-  displayEnvironmentReadings(r);
+  displayEnvironmentReadingsOnScreen(r);
   if (currentMillis - lastReadingsMillis > delayMillis)
   {
     lastReadingsMillis = currentMillis;
     printReadings(r);
-    if (r.temp < 23.0)
+
+    int moisture = readMoistureValue();
+    printMoisture(moisture);
+    if (moisture < 300)
     {
       ledBlinker.update();
+    }
+    else
+    {
+      led.off();
     }
   }
 }
